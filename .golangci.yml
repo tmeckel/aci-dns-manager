@@ -6,31 +6,14 @@ issues:
   max-same-issues: 0
 
 linters:
-  disable-all: true
-  enable:
-    - deadcode
-    - errcheck
-    - gofmt
-    - goimports
-    - gosimple
-    - govet
-    - ineffassign
-    - interfacer
-    - nakedret
-    - misspell
-    - staticcheck
-    - structcheck
-    - typecheck
-    - unused
-    - unconvert
-    - varcheck
-    - vet
-    - vetshadow
-    - whitespace
-
-linters-settings:
-  errcheck:
-    ignore: github.com/hashicorp/terraform-plugin-sdk/helper/schema:ForceNew|Set,fmt:.*,io:Close
-  misspell:
-    ignore-words:
-      - hdinsight
+  enable-all: true
+  disable:
+    - cyclop
+    - exhaustivestruct
+    - funlen
+    - goerr113
+    - gocognit
+    - gomnd
+    - lll
+    - wsl
+    - gochecknoglobals
