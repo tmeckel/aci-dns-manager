@@ -6,6 +6,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/containerinstance/mgmt/2019-12-01/containerinstance"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/pkg/errors"
 )
 
 type ContainerInstanceClient struct {
@@ -14,11 +15,11 @@ type ContainerInstanceClient struct {
 	containerGroupName string
 }
 
-func NewContainerInstanceClient(auth autorest.Authorizer, subscriptionId string, resourceGroupName string, containerGroupName string) (*ContainerInstanceClient, error) {
+func NewContainerInstanceClient(auth autorest.Authorizer, subscriptionID, resourceGroupName, containerGroupName string) (*ContainerInstanceClient, error) {
 	if auth == nil {
 		return nil, fmt.Errorf("parameter auth is nil")
 	}
-	if subscriptionId == "" {
+	if subscriptionID == "" {
 		return nil, fmt.Errorf("parameter subscriptionId is empty")
 	}
 	if resourceGroupName == "" {
@@ -27,8 +28,9 @@ func NewContainerInstanceClient(auth autorest.Authorizer, subscriptionId string,
 	if containerGroupName == "" {
 		return nil, fmt.Errorf("parameter containerGroupName is empty")
 	}
-	groupsClient := containerinstance.NewContainerGroupsClient(subscriptionId)
+	groupsClient := containerinstance.NewContainerGroupsClient(subscriptionID)
 	groupsClient.Authorizer = auth
+
 	return &ContainerInstanceClient{
 		client:             &groupsClient,
 		resourceGroupName:  resourceGroupName,
@@ -39,7 +41,8 @@ func NewContainerInstanceClient(auth autorest.Authorizer, subscriptionId string,
 func (ci *ContainerInstanceClient) Get(ctx context.Context) (*containerinstance.ContainerGroup, error) {
 	val, err := ci.client.Get(ctx, ci.resourceGroupName, ci.containerGroupName)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to get container instance")
 	}
-	return &val, err
+
+	return &val, nil
 }

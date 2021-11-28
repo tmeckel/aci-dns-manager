@@ -3,7 +3,6 @@ package internal
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/pkg/errors"
 )
 
 type Authorizer struct {
@@ -30,7 +30,7 @@ func NewAuthorizer(ctx context.Context, credential *azidentity.ChainedTokenCrede
 	if credential == nil {
 		return nil, fmt.Errorf("parameter credential is nil")
 	}
-	if scopes == nil || len(*scopes) <= 0 {
+	if scopes == nil || len(*scopes) == 0 {
 		return nil, fmt.Errorf("parameter scopes is nil or empty")
 	}
 
@@ -38,23 +38,29 @@ func NewAuthorizer(ctx context.Context, credential *azidentity.ChainedTokenCrede
 		ctx:        ctx,
 		credential: credential,
 		scopes:     *scopes,
+		token:      nil,
 	}, nil
 }
 
 func (a *Authorizer) WithAuthorization() autorest.PrepareDecorator {
 	return func(p autorest.Preparer) autorest.Preparer {
-		return autorest.PreparerFunc(func(r *http.Request) (*http.Request, error) {
+		return autorest.PreparerFunc(func(request *http.Request) (*http.Request, error) {
 			if a.token == nil || a.token.ExpiresOn.Before(time.Now()) {
 				accToken, err := a.credential.GetToken(a.ctx, policy.TokenRequestOptions{
 					Scopes: a.scopes,
 				})
 				if err != nil {
-					log.Printf("WithAuthorization: failed to get access token %+v\n", err)
-					return nil, err
+					return nil, errors.Wrap(err, "failed to get access token")
 				}
 				a.token = accToken
 			}
-			return autorest.Prepare(r, autorest.WithBearerAuthorization(a.token.Token))
+
+			request, err := autorest.Prepare(request, autorest.WithBearerAuthorization(a.token.Token))
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to create authorization header")
+			}
+
+			return request, nil
 		})
 	}
 }

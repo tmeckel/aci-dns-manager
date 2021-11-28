@@ -5,7 +5,9 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math"
 	"os"
+	"strings"
 	"time"
 
 	azlog "github.com/Azure/azure-sdk-for-go/sdk/azcore/log"
@@ -15,8 +17,18 @@ import (
 	"github.com/tmeckel/aci-dns-updater/internal"
 )
 
+var (
+	version = "dev"
+	commit  = "unknown"
+)
+
 func main() {
 	ctx := context.Background()
+
+	if len(os.Args) >= 2 && strings.EqualFold(os.Args[1], "version") {
+		fmt.Fprintf(os.Stdout, "aci-dns-manager version: %s, commit: %s\n", version, commit)
+		os.Exit(0)
+	}
 
 	var doDelete bool
 	flag.BoolVar(&doDelete, "delete", false, "delete existing DNS A record")
@@ -30,8 +42,8 @@ func main() {
 		})
 	}
 
-	subscriptionId := internal.GetenvStr("ARM_SUBSCRIPTION_ID", "")
-	if subscriptionId == "" {
+	subscriptionID := internal.GetenvStr("ARM_SUBSCRIPTION_ID", "")
+	if subscriptionID == "" {
 		fmt.Fprint(os.Stderr, "Environment variable ARM_SUBSCRIPTION_ID is not defined or empty\n")
 		os.Exit(1)
 	}
@@ -67,17 +79,16 @@ func main() {
 	}
 
 	var container *containerinstance.ContainerGroup
-	maxRetry, _ := internal.GetenvInt("ACI_MAX_RETRY", 10)
-	timeout, _ := internal.GetenvInt("ACI_TIMEOUT", 10)
+	maxRetry, _ := internal.GetenvIntRange("ACI_MAX_RETRY", 4, 1, math.MaxInt)
+	timeout, _ := internal.GetenvIntRange("ACI_TIMEOUT", 5, 1, math.MaxInt)
 
 	for i := 0; i < maxRetry; i++ {
 		_container, err := cic.Get(ctx)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to get to container instance: %+v\n", err)
-			continue
-		}
-		if _container.ContainerGroupProperties != nil && _container.ContainerGroupProperties.IPAddress != nil && _container.ContainerGroupProperties.IPAddress.IP != nil {
+		} else if _container.ContainerGroupProperties != nil && _container.ContainerGroupProperties.IPAddress != nil && _container.ContainerGroupProperties.IPAddress.IP != nil {
 			container = _container
+
 			break
 		}
 		time.Sleep(time.Duration(timeout) * time.Second)
@@ -88,14 +99,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	//nolint:staticcheck
 	log.Printf("Container instance with id %s has ipv4 address %s\n", *container.ID, *container.ContainerGroupProperties.IPAddress.IP)
 
-	dnsZoneSubscriptionId := os.Getenv("DNS_ZONE_RESOURCE_SUBSCRIPTION_ID")
-	if dnsZoneSubscriptionId == "" {
-		dnsZoneSubscriptionId = os.Getenv("ARM_SUBSCRIPTION_ID")
+	dnsZoneSubscriptionID := os.Getenv("DNS_ZONE_RESOURCE_SUBSCRIPTION_ID")
+	if dnsZoneSubscriptionID == "" {
+		dnsZoneSubscriptionID = os.Getenv("ARM_SUBSCRIPTION_ID")
 	}
-	dnsRecordsClient, err := internal.NewPrivateDnsRecordSetsClient(auth, dnsZoneSubscriptionId, os.Getenv("DNS_ZONE_RESOURCE_GROUP_NAME"), os.Getenv("DNS_ZONE_NAME"))
+	dnsRecordsClient, err := internal.NewPrivateDNSRecordSetsClient(auth, dnsZoneSubscriptionID, os.Getenv("DNS_ZONE_RESOURCE_GROUP_NAME"), os.Getenv("DNS_ZONE_NAME"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to create private DNS record set client: %+v\n", err)
 		os.Exit(1)
@@ -115,7 +125,7 @@ func main() {
 
 		log.Printf("Successfully deleted A record in zone %s\n", os.Getenv("DNS_ZONE_NAME"))
 	} else {
-		ttl, _ := internal.GetenvInt64("DNS_A_RECORD_TTL", 3600)
+		ttl, _ := internal.GetenvInt64Range("DNS_A_RECORD_TTL", 3600, 1, math.MaxInt64)
 
 		record, err := dnsRecordsClient.CreateOrUpdate(ctx,
 			privatedns.A,
@@ -131,7 +141,6 @@ func main() {
 				},
 			},
 		)
-
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to create private DNS A record: %+v\n", err)
 			os.Exit(1)

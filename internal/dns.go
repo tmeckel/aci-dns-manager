@@ -6,20 +6,21 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/privatedns/mgmt/privatedns"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/pkg/errors"
 )
 
-type PrivateDnsRecordSetsClient struct {
+type PrivateDNSRecordSetsClient struct {
 	client            *privatedns.RecordSetsClient
 	resourceGroupName string
 	privateZoneName   string
 }
 
-func NewPrivateDnsRecordSetsClient(auth autorest.Authorizer, subscriptionId string, resourceGroupName string, privateZoneName string) (*PrivateDnsRecordSetsClient, error) {
+func NewPrivateDNSRecordSetsClient(auth autorest.Authorizer, subscriptionID, resourceGroupName, privateZoneName string) (*PrivateDNSRecordSetsClient, error) {
 	if auth == nil {
 		return nil, fmt.Errorf("parameter auth is nil")
 	}
-	if subscriptionId == "" {
-		return nil, fmt.Errorf("parameter subscriptionId is empty")
+	if subscriptionID == "" {
+		return nil, fmt.Errorf("parameter subscriptionID is empty")
 	}
 	if resourceGroupName == "" {
 		return nil, fmt.Errorf("parameter resourceGroupName is empty")
@@ -28,17 +29,18 @@ func NewPrivateDnsRecordSetsClient(auth autorest.Authorizer, subscriptionId stri
 		return nil, fmt.Errorf("parameter privateZoneName is empty")
 	}
 
-	privateDnsClient := privatedns.NewRecordSetsClient(subscriptionId)
-	privateDnsClient.Authorizer = auth
-	return &PrivateDnsRecordSetsClient{
-		client:            &privateDnsClient,
+	privateDNSClient := privatedns.NewRecordSetsClient(subscriptionID)
+	privateDNSClient.Authorizer = auth
+
+	return &PrivateDNSRecordSetsClient{
+		client:            &privateDNSClient,
 		resourceGroupName: resourceGroupName,
 		privateZoneName:   privateZoneName,
 	}, nil
 }
 
-func (c *PrivateDnsRecordSetsClient) CreateOrUpdate(ctx context.Context, recordType privatedns.RecordType, relativeRecordSetName string, parameters privatedns.RecordSet) (privatedns.RecordSet, error) {
-	return c.client.CreateOrUpdate(ctx,
+func (c *PrivateDNSRecordSetsClient) CreateOrUpdate(ctx context.Context, recordType privatedns.RecordType, relativeRecordSetName string, parameters privatedns.RecordSet) (privatedns.RecordSet, error) {
+	recordSet, err := c.client.CreateOrUpdate(ctx,
 		c.resourceGroupName,
 		c.privateZoneName,
 		recordType,
@@ -46,23 +48,36 @@ func (c *PrivateDnsRecordSetsClient) CreateOrUpdate(ctx context.Context, recordT
 		parameters,
 		"",
 		"")
+	if err != nil {
+		return recordSet, errors.Wrap(err, "failed to create or update record set")
+	}
+
+	return recordSet, nil
 }
 
-func (c *PrivateDnsRecordSetsClient) Get(ctx context.Context, recordType privatedns.RecordType, relativeRecordSetName string) (privatedns.RecordSet, error) {
-	return c.client.Get(ctx,
+func (c *PrivateDNSRecordSetsClient) Get(ctx context.Context, recordType privatedns.RecordType, relativeRecordSetName string) (privatedns.RecordSet, error) {
+	recordSet, err := c.client.Get(ctx,
 		c.resourceGroupName,
 		c.privateZoneName,
 		recordType,
 		relativeRecordSetName)
+	if err != nil {
+		return recordSet, errors.Wrap(err, "failed to get record set")
+	}
+
+	return recordSet, nil
 }
 
-func (c *PrivateDnsRecordSetsClient) Delete(ctx context.Context, recordType privatedns.RecordType, relativeRecordSetName string) error {
+func (c *PrivateDNSRecordSetsClient) Delete(ctx context.Context, recordType privatedns.RecordType, relativeRecordSetName string) error {
 	_, err := c.client.Delete(ctx,
 		c.resourceGroupName,
 		c.privateZoneName,
 		recordType,
 		relativeRecordSetName,
 		"")
+	if err != nil {
+		return errors.Wrap(err, "failed to delete record set")
+	}
 
-	return err
+	return nil
 }
