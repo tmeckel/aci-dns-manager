@@ -13,5 +13,6 @@
 
 # Additional exludes
 **/bin
-**/.env*
+**/dist
+**/.*env*
 **/.demo*
