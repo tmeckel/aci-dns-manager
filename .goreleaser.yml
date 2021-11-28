@@ -1,0 +1,49 @@
+project_name: aci-dns-manager
+env_files:
+  github_token: .github_token.env
+builds:
+  - main: cmd/main.go
+    binary: aci-dns-manager
+    flags:
+      - -a
+    ldflags:
+      - -s -w
+      - "-extldflags '-static'"
+      - -X main.version={{.Version}}
+      - -X main.commit={{.ShortCommit}}
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+    goarch:
+      - amd64
+
+archives:
+  - name_template: '{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+    replacements:
+      linux: Linux
+      windows: Windows
+      amd64: x86_64
+    format_overrides:
+    - goos: windows
+      format: zip
+    files:
+      - README.md
+      - LICENSE
+dockers:
+  - image_templates:
+      - "ghcr.io/tmeckel/{{ .ProjectName }}:{{ .Version }}"
+      - "ghcr.io/tmeckel/{{ .ProjectName }}:latest"
+    goos: linux
+    goarch: amd64
+    dockerfile: docker/Dockerfile
+    build_flag_templates:
+      - "--label=org.label-schema.schema-version=1.0"
+      - "--label=org.label-schema.name={{ .ProjectName }}"
+      - "--label=org.label-schema.description=DNS Manager for Azure Container Instances"
+      - "--label=org.label-schema.version={{ .Version }}"
+      - "--label=org.label-schema.build-date={{ .Date }}"
+      - "--label=org.label-schema.vcs=https://github.com/tmeckel/aci-dns-manager"
+      - "--label=org.label-schema.vcs-ref={{ .FullCommit }}"
+      - "--platform=linux/amd64"
