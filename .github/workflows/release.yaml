@@ -26,6 +26,9 @@ jobs:
           username: ${{ env.GH_USER }}
           password: ${{ secrets.GH_TOKEN }}
 
+      - name: Checkout code
+        uses: actions/checkout@v2
+
       - name: Create release
         uses: goreleaser/goreleaser-action@v2
         with:
