@@ -105,7 +105,11 @@ func main() {
 	if dnsZoneSubscriptionID == "" {
 		dnsZoneSubscriptionID = os.Getenv("ARM_SUBSCRIPTION_ID")
 	}
-	dnsRecordsClient, err := internal.NewPrivateDNSRecordSetsClient(auth, dnsZoneSubscriptionID, os.Getenv("DNS_ZONE_RESOURCE_GROUP_NAME"), os.Getenv("DNS_ZONE_NAME"))
+	dnsZoneResourceGroup := os.Getenv("DNS_ZONE_RESOURCE_GROUP_NAME")
+	if dnsZoneResourceGroup == "" {
+		dnsZoneResourceGroup = os.Getenv("ACI_RESOURCE_GROUP_NAME")
+	}
+	dnsRecordsClient, err := internal.NewPrivateDNSRecordSetsClient(auth, dnsZoneSubscriptionID, dnsZoneResourceGroup, os.Getenv("DNS_ZONE_NAME"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to create private DNS record set client: %+v\n", err)
 		os.Exit(1)
