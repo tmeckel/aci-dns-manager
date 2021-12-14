@@ -79,14 +79,17 @@ func main() {
 	}
 
 	var container *containerinstance.ContainerGroup
-	maxRetry, _ := internal.GetenvIntRange("ACI_MAX_RETRY", 4, 1, math.MaxInt)
+	maxRetry, _ := internal.GetenvIntRange("ACI_MAX_RETRY", 12, 1, math.MaxInt)
 	timeout, _ := internal.GetenvIntRange("ACI_TIMEOUT", 5, 1, math.MaxInt)
 
 	for i := 0; i < maxRetry; i++ {
 		_container, err := cic.Get(ctx)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to get to container instance: %+v\n", err)
-		} else if _container.ContainerGroupProperties != nil && _container.ContainerGroupProperties.IPAddress != nil && _container.ContainerGroupProperties.IPAddress.IP != nil {
+		} else if _container.ContainerGroupProperties != nil &&
+			_container.ContainerGroupProperties.IPAddress != nil &&
+			_container.ContainerGroupProperties.IPAddress.IP != nil &&
+			*_container.ContainerGroupProperties.IPAddress.IP != "0.0.0.0" {
 			container = _container
 
 			break
