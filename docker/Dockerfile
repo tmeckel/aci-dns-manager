@@ -23,7 +23,7 @@ COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=build /etc/passwd /etc/passwd
 COPY --from=build /etc/group /etc/group
 
-COPY aci-dns-manager /aci-dns-manager
+COPY dist/aci-dns-manager /aci-dns-manager
 
 USER ${USER}:${USER}
 
