@@ -123,10 +123,12 @@ The program is configured via various environment variables
 The following examples are provided to show the usage of `aci-dns-manager`:
 
 1. Scenario: `S6-Init`
+
     The `S6-Init` system will execute `aci-dns-manager` inside an init script.
     Details can be found in [README](example/s6/README.md)
 
 2. Scenario: ACI Init Container
+
    `aci-dns-manager` will be run in an Init container defined in the YAML file which describes the ACI.
    Details can be found in [README](example/init/README.md)
 
