@@ -21,7 +21,7 @@ require (
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/form3tech-oss/jwt-go v3.2.2+incompatible // indirect
 	github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4 // indirect
-	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
-	golang.org/x/net v0.0.0-20220722155237-a158d28d115b // indirect
-	golang.org/x/text v0.3.8 // indirect
+	golang.org/x/crypto v0.1.0 // indirect
+	golang.org/x/net v0.1.0 // indirect
+	golang.org/x/text v0.4.0 // indirect
 )
